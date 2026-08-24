@@ -1,9 +1,9 @@
-# File chứa biến môi trường & secret
+
 .env
 *.log
 incident_report.log
 
-# Cấu hình IDE / OS
+
 .vscode/
 .idea/
 .DS_Store

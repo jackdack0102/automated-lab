@@ -22,3 +22,5 @@ jobs:
         context: ./app
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/network-probe:latest
+
+        

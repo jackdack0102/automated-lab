@@ -23,3 +23,4 @@ def reset_fault():
     global is_faulty
     is_faulty = False
     return {"message": "System state restored."}
+

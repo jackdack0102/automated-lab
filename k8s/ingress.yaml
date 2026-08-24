@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: network-probe-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: automated-lab.local  
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: network-probe-service
+                port:
+                  number: 8000

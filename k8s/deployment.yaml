@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: probe-container
-        image: /network-probe:latest
+        image: hoanghuynh555/automated-lab:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -26,10 +26,11 @@ kind: Service
 metadata:
   name: network-probe-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: network-probe
   ports:
     - port: 8000
       targetPort: 8000
-      nodePort: 30080
+
+      
