@@ -16,10 +16,13 @@ spec:
     spec:
       containers:
       - name: probe-container
-        image: hoanghuynh555/automated-lab:v1
+        image: hoanghuynh555/automated-lab:v2
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
 ---
 apiVersion: v1
 kind: Service
