@@ -7,3 +7,6 @@ incident_report.log
 .vscode/
 .idea/
 .DS_Store
+
+__pycache__/
+*.pyc
