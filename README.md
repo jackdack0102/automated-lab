@@ -1,47 +1,115 @@
 # Automated Lab (K8s Auto-Healing)
 
-An automated Kubernetes lab simulating a network service with **NGINX Ingress** routing and a **Python Recovery Agent** for real-time monitoring, automated log extraction, and self-healing.
+An automated Kubernetes lab simulating a network service with NGINX Ingress routing, Redis shared state, and a Python recovery agent powered by Gemini AI for real-time monitoring, automated log extraction, and self-healing.
 
-## Disaster Simulation & Recovery
+## Overview
 
-### 1. Run Monitoring Agent
+This project demonstrates a simple self-healing Kubernetes environment:
+
+- a FastAPI app exposes health and fault endpoints
+- Redis stores the fault state across replicas
+- a monitoring agent watches `/health`
+- Gemini AI analyzes logs and recommends a recovery action
+- Telegram sends approval prompts before any recovery command runs
+
+---
+
+## Prerequisites
+
+Start the Minikube tunnel:
+
+```bash
+minikube tunnel
+```
+
+Configure `/etc/hosts`:
+
+```bash
+127.0.0.1 automated-lab.local
+```
+
+---
+
+## Environment Setup
+
+Create a `.env` file and add the following values:
+
+```env
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+---
+
+## Run the Lab
+
+### 1. Start the monitoring agent
 
 ```bash
 source venv/bin/activate
 python scripts/tr_recovery_agent.py
 ```
 
-Or without activating: `./venv/bin/python scripts/tr_recovery_agent.py`
+### 2. Trigger the incident
 
-
-### 2. Trigger Incident
-
+```bash
 curl -X POST http://automated-lab.local/simulate-fault
-
-### 3. AI diagnosis + Telegram approval
-
-The Recovery Agent:
-
-* Detects HTTP failure on `/health`.
-* Captures Pod logs to `incident_report.log`.
-* Sends the error and logs to Gemini for a diagnosis and a proposed action (`reset_fault`, `restart_pod`, or `none`).
-* Posts that proposal to Telegram **once** with **Execute** / **Ignore** buttons.
-* Runs the command **only after you tap Execute**. It does not treat a later `/health` 200 as recovery while that decision is still pending (Ingress can hit a healthy replica even though the fault is still on).
-* After you tap a button, it stays silent until `/health` is 200, then the next outage can alert again.
-
-Set these in `.env`:
-
-```
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_CHAT_ID=...
-GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-3.8-flash
 ```
 
-If `GEMINI_API_KEY` is missing, the agent falls back to a simple heuristic diagnosis. Buttons still require your confirmation.
+### 3. Observe the recovery flow
 
-### 4. Restore operations
+The recovery agent will:
 
-After you approve **Reset fault**, the agent clears `is_faulty` **inside every pod** (`kubectl exec` → `POST /reset-fault`). A curl through Ingress only reaches one replica, so `/reset-fault` (alias `/reset-default`) via the browser can look “broken” while the other pod is still faulty. This lab uses **1 replica** so health is consistent.
+- detect an HTTP 500 failure on `/health`
+- capture pod logs into `incident_report.log`
+- send logs to Gemini AI for diagnosis
+- propose one recovery action: `reset_fault`, `restart_pod`, or `none`
+- send the proposal to Telegram with interactive Execute / Ignore buttons
+- execute the action only after operator confirmation
+- keep Redis state synchronized across all replicas
 
-After you approve **Restart pods**, it runs `kubectl rollout restart deployment/network-probe-app`.
+---
+
+## Core Components
+
+- `main.py` — FastAPI application with health and fault endpoints
+- `scripts/tr_recovery_agent.py` — monitoring, diagnosis, Telegram approval, and recovery logic
+- `k8s/` — Kubernetes deployment and service manifests
+- `redis` — shared state for fault simulation across replicas
+- `Ingress` — routes traffic through `automated-lab.local`
+
+---
+
+## Useful Commands
+
+Check app health:
+
+```bash
+curl http://automated-lab.local/health
+```
+
+Reset the fault manually:
+
+```bash
+curl -X POST http://automated-lab.local/reset-fault
+```
+
+View running pods:
+
+```bash
+kubectl get pods
+```
+
+View pod logs:
+
+```bash
+kubectl logs -l app=network-probe
+```
+
+---
+
+## Notes
+
+This project is intended for local Kubernetes experimentation and automated recovery testing. It is designed as a lab/demo environment rather than a production-ready system.
