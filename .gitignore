@@ -10,3 +10,7 @@ incident_report.log
 
 __pycache__/
 *.pyc
+
+.ai/
+.cursorrules
+CURRENT_PLAN.md

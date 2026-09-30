@@ -12,10 +12,61 @@ import subprocess
 import threading
 import time
 import uuid
-from datetime import datetime
-
 import requests
+from datetime import datetime
+from elasticsearch import Elasticsearch
 from dotenv import load_dotenv
+from google import genai
+
+# Connect to the Elasticsearch service inside Kubernetes
+es = Elasticsearch(["http://elasticsearch.default.svc.cluster.local:9200"])
+def get_logs_from_elasticsearch():
+    """Query the 10 most recent error logs from Elasticsearch."""
+    search_url = f"{ES_URL}/k8s-app-logs/_search"
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"match": {"levelname": "ERROR"}}
+                ]
+            }
+        },
+        "sort": [{"@timestamp": {"order": "desc"}}],
+        "size": 10
+    }
+    
+    try:
+        response = requests.post(search_url, json=query, timeout=5)
+        if response.status_code == 200:
+            hits = response.json().get("hits", {}).get("hits", [])
+            logs = [hit.get("_source", {}).get("log", str(hit.get("_source"))) for hit in hits]
+            return "\n".join(logs) if logs else "No error log entries found in Elasticsearch."
+        else:
+            return f"Failed to query Elasticsearch. HTTP {response.status_code}"
+    except Exception as e:
+        return f"Error connecting to Elasticsearch: {e}"
+
+def analyze_incident_with_gemini():
+    # 1. Fetch error logs from Elasticsearch
+    logs = get_logs_from_elasticsearch()
+    
+    # 2. Pass log context to Gemini AI for incident analysis
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    prompt = f"""
+    You are an SRE Assistant. Analyze these Kubernetes application logs fetched from Elasticsearch and recommend a recovery action.
+    
+    Logs:
+    {logs}
+    
+    Provide diagnosis and propose one action: 'reset_fault', 'restart_pod', or 'none'.
+    """
+    
+    response = client.models.generate_content(
+        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        contents=prompt
+    )
+    return response.text
+
 
 # --- [CONFIG] Service targets and env (Telegram + Gemini) ---
 APP_URL = "http://automated-lab.local/health"

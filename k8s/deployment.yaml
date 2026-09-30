@@ -21,6 +21,10 @@ spec:
         ports:
         - containerPort: 8000
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: REDIS_HOST
           value: "redis-service"
 ---
@@ -35,5 +39,3 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
-
-      

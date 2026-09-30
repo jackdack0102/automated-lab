@@ -3,3 +3,4 @@ requests
 python-dotenv
 uvicorn
 redis
+python-json-logger
