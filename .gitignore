@@ -4,6 +4,21 @@
 incident_report.log
 
 
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+**/*.tfvars.json
+**/crash.log
+**/crash.*.log
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+**/.terraformrc
+**/terraform.rc
+
 .vscode/
 .idea/
 .DS_Store
@@ -14,3 +29,4 @@ __pycache__/
 .ai/
 .cursorrules
 CURRENT_PLAN.md
+
